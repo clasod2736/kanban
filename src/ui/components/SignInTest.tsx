@@ -2,6 +2,7 @@
 
 import React from "react";
 import { signIn, signOut, useSession } from 'next-auth/react'
+import { Button } from "@/ui/components/Button";
 
 const SignInButton = () => {
   const { data: session } = useSession();
@@ -15,7 +16,8 @@ const SignInButton = () => {
     )
   }
   return (
-    <button onClick={() => signIn()}>Sign In!</button>
+    // <utton onClick={() => signIn()}>Sign In!</button>
+    <Button handleClick={() => signIn()} label="Sing In" size="lg" />
   )
 }
 
