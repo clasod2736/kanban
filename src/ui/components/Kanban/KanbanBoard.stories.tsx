@@ -1,12 +1,45 @@
-'use client'
+import { useEffect } from 'react'
+import { useArgs } from '@storybook/preview-api'
+import type { Meta, StoryObj } from '@storybook/react'
+import { DndProvider } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 
-import { useEffect, useState } from "react";
-import SignInButton from "@/ui/components/SignInTest";
-import { KanbanBoard, type KanbanBoardProps } from "@/ui/components/Kanban";
-import { type ColumnProps } from "@/ui/components/Kanban/Column";
-import { type ItemComponent } from "@/ui/components/List";
+import { KanbanBoard, type KanbanBoardProps } from './index'
+import { type ColumnProps } from './Column'
+import { moveItem } from './utils'
+import { type ItemComponent } from '../List'
 
-import { moveItem } from "@/ui/components/Kanban/utils/index";
+// More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
+const meta: Meta<typeof KanbanBoard> = {
+  title: 'UI/Kanban/Board',
+  component: KanbanBoard,
+  parameters: {
+    // Optional parameter to center the component in the Canvas. More info: https://storybook.js.org/docs/configure/story-layout
+    layout: 'fullscreen',
+    nextjs: {
+      appDirectory: true,
+    },
+  },
+  // This component will have an automatically generated Autodocs entry: https://storybook.js.org/docs/writing-docs/autodocs
+  tags: ['autodocs'],
+  // More on argTypes: https://storybook.js.org/docs/api/argtypes
+  argTypes: {},
+  decorators: [
+    (Story) => {
+      return (
+        <DndProvider backend={HTML5Backend}>
+          <div className="flex flex-col h-[1500px]">
+            {/* 👇 Decorators in Storybook also accept a function. Replace <Story/> with Story() to enable it  */}
+            <Story />
+          </div>
+        </DndProvider>
+      )
+    },
+  ],
+}
+
+export default meta
+type Story = StoryObj<typeof meta>
 
 const addItem = (columns: ColumnProps[], columnId: string): ColumnProps[] => {
   const newItemId = `item-${Date.now()}`
@@ -508,38 +541,81 @@ const initialKanbanBoard: KanbanBoardProps = {
   ],
 }
 
-export default function LandingPage() {
-  const [columns, setColumns] = useState<ColumnProps[]>(initialKanbanBoard.columns)
+const initialColumns: ColumnProps[] = initialKanbanBoard.columns
 
-  useEffect(() => {
-    setColumns(initialKanbanBoard.columns)
-  }, [initialKanbanBoard.columns])
+export const Default: Story = {
+  args: {
+    addItem,
+    moveItem,
+    moveColumn,
+    deleteItem,
+    deleteColumn,
+    initialColumns,
+  },
+  render: (args) => {
+    const {
+      addItem,
+      moveItem,
+      moveColumn,
+      deleteItem,
+      deleteColumn,
+      initialColumns,
+    } = args
 
-  const handleMoveItem = (
-    id: string,
-    hoverColumnId: string,
-    hoverSubsectionId: string,
-    hoverIndex: number,
-  ) => {
-    const newColumns = moveItem(
-      columns,
-      id,
-      hoverColumnId,
-      hoverSubsectionId,
-      hoverIndex,
-    )
-    setColumns(newColumns)
-  }
+    const [{ columnsArg }, setColumnsArg] = useArgs<{
+      columnsArg: ColumnProps[]
+    }>()
 
-  return (
-    <div className="flex flex-col p-4 w-full">
-      {/* <SignInButton /> */}
-      <div className="h-screen w-full">
-        <KanbanBoard 
-        columns={columns}
-        handleMoveItem={handleMoveItem}
-        />
-      </div>
-    </div>
-  )
+    useEffect(() => {
+      setColumnsArg({ columnsArg: initialColumns })
+    }, [initialColumns])
+
+    const handleAddItem = (columnId: string) => {
+      setColumnsArg({ columnsArg: addItem(columnsArg, columnId) })
+    }
+
+    const handleMoveColumn = (dragIndex: number, hoverIndex: number) => {
+      setColumnsArg({
+        columnsArg: moveColumn(columnsArg, dragIndex, hoverIndex),
+      })
+    }
+
+    const handleMoveItem = (
+      itemId: string,
+      hoverColumnId: string,
+      targetSectionId: string,
+      hoverIndex: number,
+    ) => {
+      setColumnsArg({
+        columnsArg: moveItem(
+          columnsArg,
+          itemId,
+          hoverColumnId,
+          targetSectionId,
+          hoverIndex,
+        ),
+      })
+    }
+
+    const handleDeleteItem = (itemId: string) => {
+      setColumnsArg({ columnsArg: deleteItem(columnsArg, itemId) })
+    }
+
+    const handleDeleteColumn = (columnId: string) => {
+      setColumnsArg({ columnsArg: deleteColumn(columnsArg, columnId) })
+    }
+
+    const columnsWithHandlers =
+      columnsArg &&
+      columnsArg.map((column) => ({
+        ...column,
+        handleAddItem,
+        handleDeleteItem,
+        handleDeleteColumn,
+        handleMoveItem,
+        handleMoveColumn,
+      }))
+
+    return <KanbanBoard {...initialKanbanBoard} columns={columnsWithHandlers} />
+  },
 }
