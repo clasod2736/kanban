@@ -6,6 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/ui/shadcn/skeleton"
+import { Icon, type iconTypes } from "../Icon"
 import { Loader2 } from "lucide-react"
 
 const buttonVariants = cva(
@@ -45,6 +46,8 @@ VariantProps<typeof buttonVariants> {
   label?: string
   className?: string
   asChild?: boolean
+  leftIcon?: iconTypes
+  rightIcon?: iconTypes
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
   size?: "default" | "sm" | "lg" | "icon"
   handleClick?: () => void
@@ -58,6 +61,8 @@ function Button(props: ButtonProps) {
     className,
     variant,
     size,
+    leftIcon,
+    rightIcon,
     handleClick,
     isLoading,
     isDisabled,
@@ -71,13 +76,15 @@ function Button(props: ButtonProps) {
 
   const content = (
     <div className="flex flex-row items-center justify-center gap-2">
+      {leftIcon && <Icon name={leftIcon} size={16} />}
       {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
       {label}
+      {rightIcon && <Icon name={rightIcon} size={16} />}
     </div>
   )
 
   return (
-    <Comp
+    <button
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
       onClick={handleClick}
@@ -85,7 +92,7 @@ function Button(props: ButtonProps) {
       {...props}
     >
       {content}
-    </Comp>
+    </button>
   )
 }
 
